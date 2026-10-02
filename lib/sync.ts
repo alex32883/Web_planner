@@ -51,6 +51,7 @@ export async function runSync(mode: "merge" | "replace" = "merge"): Promise<Sync
     const response = await fetch("/api/sync", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ mode, payload: local }),
     });
     const data = (await response.json()) as SyncResponse;

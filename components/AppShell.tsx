@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { CommandBar } from "@/components/CommandBar";
 import {
   IconCalendar,
@@ -11,6 +12,7 @@ import {
   IconTasks,
   IconToday,
 } from "@/components/Icons";
+import { subscribeSync } from "@/lib/sync";
 
 const nav = [
   { href: "/", label: "Today", icon: IconToday },
@@ -84,6 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <CommandBar />
           </header>
+          <SyncNotice />
           <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
         </div>
       </div>
@@ -108,6 +111,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </ul>
       </nav>
+    </div>
+  );
+}
+
+function SyncNotice() {
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "error">("idle");
+  const [cloud, setCloud] = useState<boolean | null>(null);
+
+  useEffect(() => subscribeSync(setSyncState), []);
+
+  useEffect(() => {
+    void fetch("/api/status")
+      .then((response) => response.json())
+      .then((data: { storageConfigured?: boolean }) => {
+        setCloud(Boolean(data.storageConfigured));
+      })
+      .catch(() => setCloud(false));
+  }, []);
+
+  if (cloud !== false && syncState !== "error") return null;
+
+  const message =
+    cloud === false
+      ? "Shared sync is not connected, so items stay on this browser only."
+      : "Could not sync with other devices. Open Settings and tap Sync now.";
+
+  return (
+    <div className="border-b border-[var(--line)] bg-[#f4efe6] px-4 py-2 text-sm text-[var(--pine)] md:px-8">
+      {message}{" "}
+      <Link href="/settings" className="underline underline-offset-2">
+        Settings
+      </Link>
     </div>
   );
 }
